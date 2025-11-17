@@ -114,6 +114,7 @@ Randomly selects from rapid, burst, and drip patterns per worker, creating unpre
 - `--requests-per-worker`: Number of requests each worker will send. Default: `10`
 - `--udp-packets-per-worker`: Number of UDP packets each worker will send. Default: `20`
 - `--sockets-per-worker`: Number of sockets each slowloris worker will create. Default: `50`
+- `--delay`: Base delay (seconds) applied per worker when spawning additional local nodes. Default: `0.02`
 
 ### Attack Style Configuration
 
@@ -132,6 +133,11 @@ Randomly selects from rapid, burst, and drip patterns per worker, creating unpre
 
 - `--payload-size`: Size of random payload for POST/UDP requests in bytes. Default: `64`
 
+### Telemetry and Export
+
+- `--export-json`: Path to write a summary analytics report (JSON). When set, the tool serializes aggregate metrics including RPS, response time percentiles, status code counts, and error breakdown.
+- `--export-csv`: Path to write detailed per-request metrics (CSV). Each row includes a timestamp, response time, status code, or error label for post-test analysis.
+
 ### Distributed Node Configuration
 
 - `--nodes`: Number of local processes to spawn (spawn-nodes mode). Default: `1`
@@ -139,6 +145,20 @@ Randomly selects from rapid, burst, and drip patterns per worker, creating unpre
 ### Safety
 
 - `--confirm`: Required flag to execute the attack simulation. Without this flag, the tool will exit without performing any operations.
+
+### Observability & Customization
+
+- `--show-progress`: Display real-time progress indicators for long-running tests (available for HTTP, UDP, mixed, and spawn-nodes modes).
+- `--custom-headers`: JSON string defining additional HTTP headers (e.g., `{"X-Test-Run": "alpha"}`) that will be attached to outbound HTTP requests for attribution and WAF testing.
+
+## Analytics & Observability Enhancements
+
+Recent releases added advanced telemetry controls to help correlate test runs with downstream monitoring:
+
+- Real-time console analytics now include response time percentiles, bandwidth calculations, and error categorization.
+- `--show-progress` renders an ongoing progress ticker for long-lived mixed or spawn-nodes tests so operators can observe throughput without waiting for completion.
+- `--export-json` and `--export-csv` let you persist the runtime metrics captured by the analytics subsystem, enabling later comparison across runs or ingestion into dashboards.
+- Custom header injection via `--custom-headers` makes it easier to tag requests or exercise WAF rulesets that depend on header-based routing.
 
 ## Example Commands
 
@@ -155,7 +175,7 @@ python3 micro_botnet.py --mode spawn-nodes --nodes 3 --concurrency 100 --request
 Single-process rapid HTTP GET flood with high concurrency:
 
 ```
-python3 micro_botnet.py --mode http-get --concurrency 200 --requests-per-worker 50 --attack-style rapid --rapid-delay 0.002 --target https://booknerdsociety.com --confirm
+python3 micro_botnet.py --mode http-get --concurrency 200 --requests-per-worker 50 --attack-style rapid --rapid-delay 0.002 --target https://booknerdsociety.com --show-progress --export-json rapid_get_summary.json --confirm
 ```
 
 ### Drip Pattern POST Attack
@@ -171,7 +191,7 @@ python3 micro_botnet.py --mode http-post --concurrency 50 --requests-per-worker 
 Concurrent GET, POST, and UDP attacks with mixed timing patterns:
 
 ```
-python3 micro_botnet.py --mode mixed --concurrency 100 --requests-per-worker 30 --attack-style mixed --target https://booknerdsociety.com --host booknerdsociety.com --port 80 --confirm
+python3 micro_botnet.py --mode mixed --concurrency 100 --requests-per-worker 30 --attack-style mixed --target https://booknerdsociety.com --host booknerdsociety.com --port 80 --custom-headers '{"X-Test-Run":"mixed-lab"}' --export-csv mixed_run.csv --confirm
 ```
 
 ### Slowloris Connection Exhaustion
